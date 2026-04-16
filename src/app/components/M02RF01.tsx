@@ -72,9 +72,9 @@ interface AppointmentType {
   modality: "presencial" | "virtual" | "both";
 }
 
-export default function ScheduleManagement() {
+export default function M02RF01() {
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState("types");
+  const [activeTab, setActiveTab] = useState("schedule");
 
   // Appointment Types state
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([
@@ -324,10 +324,10 @@ export default function ScheduleManagement() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-semibold text-slate-900">
-                    Gestión de Disponibilidad
+                    M02-RF01: Agenda de Horarios
                   </h1>
                   <p className="text-sm text-slate-600 mt-0.5">
-                    Configure sus horarios laborales y disponibilidad para reservas
+                    Configure sus horas laborales por día y los tipos de turnos disponibles.
                   </p>
                 </div>
               </div>
@@ -365,21 +365,13 @@ export default function ScheduleManagement() {
       <main className="max-w-7xl mx-auto px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-white shadow-sm border border-slate-200/60 mb-6 p-1 h-auto relative z-0 flex w-max rounded-lg">
-            <TabsTrigger value="types" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
-              <FileText className="size-4" />
-              Tipos de Turno
-            </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
               <Clock className="size-4" />
               Horarios Semanales
             </TabsTrigger>
-            <TabsTrigger value="blocked" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
-              <CalendarX className="size-4" />
-              Días Bloqueados
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
-              <Settings className="size-4" />
-              Configuración Avanzada
+            <TabsTrigger value="types" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
+              <FileText className="size-4" />
+              Tipos de Turno
             </TabsTrigger>
           </TabsList>
 
@@ -608,250 +600,6 @@ export default function ScheduleManagement() {
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Blocked Dates Tab */}
-          <TabsContent value="blocked" className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              {/* Add Blocked Dates */}
-              <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200/60 overflow-hidden">
-                <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-4 border-b border-slate-200/60">
-                  <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                    <CalendarX className="size-5 text-red-600" />
-                    Bloquear fechas
-                  </h2>
-                  <p className="text-sm text-slate-600 mt-1">
-                    Seleccione las fechas que desea inhabilitar para reservas
-                  </p>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="flex justify-center">
-                    <Calendar
-                      mode="multiple"
-                      selected={selectedDates}
-                      onSelect={(dates) => setSelectedDates(dates || [])}
-                      className="rounded-md border"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Motivo del bloqueo
-                    </label>
-                    <Input
-                      placeholder="Ej: Vacaciones, Licencia médica, Feriado..."
-                      value={blockReason}
-                      onChange={(e) => setBlockReason(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    onClick={addBlockedDates}
-                    disabled={selectedDates.length === 0 || !blockReason}
-                    className="w-full gap-2"
-                  >
-                    <Plus className="size-4" />
-                    Bloquear {selectedDates.length > 0 && `(${selectedDates.length})`} fecha
-                    {selectedDates.length !== 1 && "s"}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Blocked Dates List */}
-              <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200/60 overflow-hidden">
-                <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200/60">
-                  <h2 className="font-semibold text-slate-900">
-                    Fechas bloqueadas ({blockedDates.length})
-                  </h2>
-                  <p className="text-sm text-slate-600 mt-1">
-                    Listado de días inhabilitados para reservas
-                  </p>
-                </div>
-                <div className="max-h-[500px] overflow-y-auto">
-                  {blockedDates.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <CalendarX className="size-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500 text-sm">
-                        No hay fechas bloqueadas actualmente
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-100">
-                      {blockedDates
-                        .sort((a, b) => a.date.getTime() - b.date.getTime())
-                        .map((blocked) => (
-                          <div
-                            key={blocked.id}
-                            className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors group"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="size-10 rounded-lg bg-red-100 flex items-center justify-center">
-                                <CalendarIcon className="size-5 text-red-600" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-slate-900">
-                                  {blocked.date.toLocaleDateString("es-AR", {
-                                    weekday: "long",
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </p>
-                                <p className="text-sm text-slate-600">{blocked.reason}</p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeBlockedDate(blocked.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Advanced Settings Tab */}
-          <TabsContent value="settings" className="space-y-4">
-            <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200/60 overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 border-b border-slate-200/60">
-                <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                  <Settings className="size-5 text-purple-600" />
-                  Configuración avanzada
-                </h2>
-                <p className="text-sm text-slate-600 mt-1">
-                  Defina parámetros adicionales para optimizar la gestión de turnos
-                </p>
-              </div>
-
-              <div className="p-8 space-y-8">
-                {/* Slot Duration */}
-                <div className="flex items-start gap-6 pb-8 border-b border-slate-100">
-                  <div className="size-12 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
-                    <Clock className="size-6 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-slate-900 mb-1">
-                      Duración de cada turno
-                    </label>
-                    <p className="text-sm text-slate-600 mb-4">
-                      Defina cuánto tiempo dura cada cita. Este valor determina los intervalos disponibles para reservar.
-                    </p>
-                    <div className="flex items-center gap-4">
-                      <Select value={slotDuration} onValueChange={(val) => {
-                        setSlotDuration(val);
-                        setHasChanges(true);
-                      }}>
-                        <SelectTrigger className="w-[240px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="15">15 minutos</SelectItem>
-                          <SelectItem value="20">20 minutos</SelectItem>
-                          <SelectItem value="30">30 minutos</SelectItem>
-                          <SelectItem value="45">45 minutos</SelectItem>
-                          <SelectItem value="60">60 minutos (1 hora)</SelectItem>
-                          <SelectItem value="90">90 minutos (1.5 horas)</SelectItem>
-                          <SelectItem value="120">120 minutos (2 horas)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Badge variant="outline" className="text-slate-600">
-                        Actual: {slotDuration} min
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Minimum Advance Booking */}
-                <div className="flex items-start gap-6 pb-8 border-b border-slate-100">
-                  <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-                    <CalendarClock className="size-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-slate-900 mb-1">
-                      Antelación mínima de reserva
-                    </label>
-                    <p className="text-sm text-slate-600 mb-4">
-                      Tiempo mínimo requerido antes de una cita para que los pacientes puedan reservarla.
-                    </p>
-                    <div className="flex items-center gap-4">
-                      <Select value={minAdvanceBooking} onValueChange={(val) => {
-                        setMinAdvanceBooking(val);
-                        setHasChanges(true);
-                      }}>
-                        <SelectTrigger className="w-[240px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">Sin antelación mínima</SelectItem>
-                          <SelectItem value="1">1 hora antes</SelectItem>
-                          <SelectItem value="2">2 horas antes</SelectItem>
-                          <SelectItem value="4">4 horas antes</SelectItem>
-                          <SelectItem value="24">24 horas antes (1 día)</SelectItem>
-                          <SelectItem value="48">48 horas antes (2 días)</SelectItem>
-                          <SelectItem value="72">72 horas antes (3 días)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Badge variant="outline" className="text-slate-600">
-                        {minAdvanceBooking === "0" ? "Inmediato" : `${minAdvanceBooking}h antes`}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Max Daily Bookings */}
-                <div className="flex items-start gap-6">
-                  <div className="size-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                    <Users className="size-6 text-emerald-600" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block font-medium text-slate-900 mb-1">
-                      Límite máximo de reservas por día
-                    </label>
-                    <p className="text-sm text-slate-600 mb-4">
-                      Número máximo de turnos que se pueden reservar por día. Una vez alcanzado, el sistema cerrará la disponibilidad automáticamente.
-                    </p>
-                    <div className="flex items-center gap-4">
-                      <Input
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={maxDailyBookings}
-                        onChange={(e) => {
-                          setMaxDailyBookings(e.target.value);
-                          setHasChanges(true);
-                        }}
-                        className="w-[240px]"
-                      />
-                      <Badge variant="outline" className="text-slate-600">
-                        Máximo: {maxDailyBookings} turnos/día
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Info Card */}
-            <div className="bg-blue-50 border border-blue-200/60 rounded-xl p-5">
-              <div className="flex gap-4">
-                <AlertCircle className="size-5 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-blue-900 mb-1">
-                    Sobre la configuración avanzada
-                  </p>
-                  <p className="text-sm text-blue-800 leading-relaxed">
-                    Estos parámetros afectan directamente a la experiencia de reserva de sus pacientes.
-                    Asegúrese de configurar valores que se ajusten a su práctica profesional y le permitan
-                    brindar un servicio de calidad sin comprometer su agenda.
-                  </p>
-                </div>
               </div>
             </div>
           </TabsContent>

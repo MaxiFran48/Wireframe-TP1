@@ -72,9 +72,9 @@ interface AppointmentType {
   modality: "presencial" | "virtual" | "both";
 }
 
-export default function ScheduleManagement() {
+export default function M02RF01() {
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState("types");
+  const [activeTab, setActiveTab] = useState("schedule");
 
   // Appointment Types state
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([
@@ -324,10 +324,10 @@ export default function ScheduleManagement() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-semibold text-slate-900">
-                    Gestión de Disponibilidad
+                    M02-RF01: Agenda de Horarios
                   </h1>
                   <p className="text-sm text-slate-600 mt-0.5">
-                    Configure sus horarios laborales y disponibilidad para reservas
+                    Configure sus horas laborales por día y los tipos de turnos disponibles.
                   </p>
                 </div>
               </div>
@@ -365,21 +365,13 @@ export default function ScheduleManagement() {
       <main className="max-w-7xl mx-auto px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-white shadow-sm border border-slate-200/60 mb-6 p-1 h-auto relative z-0 flex w-max rounded-lg">
-            <TabsTrigger value="types" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
-              <FileText className="size-4" />
-              Tipos de Turno
-            </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
               <Clock className="size-4" />
               Horarios Semanales
             </TabsTrigger>
-            <TabsTrigger value="blocked" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
-              <CalendarX className="size-4" />
-              Días Bloqueados
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
-              <Settings className="size-4" />
-              Configuración Avanzada
+            <TabsTrigger value="types" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
+              <FileText className="size-4" />
+              Tipos de Turno
             </TabsTrigger>
           </TabsList>
 
