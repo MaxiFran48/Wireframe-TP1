@@ -11,11 +11,11 @@ export default function App() {
   const renderView = () => {
     switch (currentView) {
       case "M02-RF01":
-        return <M02RF01 />;
+        return <M02RF01 onDiscard={() => setCurrentView("home")} onSave={() => {}} onNavigateHome={() => setCurrentView("home")} />;
       case "M02-RF02":
-        return <M02RF02 />;
+        return <M02RF02 onDiscard={() => setCurrentView("home")} onSave={() => {}} onNavigateHome={() => setCurrentView("home")} />;
       case "M02-RF03":
-        return <M02RF03 />;
+        return <M02RF03 onDiscard={() => setCurrentView("home")} onSave={() => {}} onNavigateHome={() => setCurrentView("home")} />;
       default:
         return null;
     }
@@ -23,15 +23,7 @@ export default function App() {
 
   if (currentView !== "home") {
     return (
-      <div className="flex flex-col min-h-screen">
-        <div className="p-4 border-b bg-white shadow-sm z-10 relative">
-          <button 
-            onClick={() => setCurrentView("home")}
-            className="text-sm font-medium text-slate-600 hover:text-indigo-600 flex items-center gap-2 transition-colors"
-          >
-            ← Volver al inicio (Perfil de Administrador)
-          </button>
-        </div>
+      <div className="flex flex-col min-h-screen relative">
         {renderView()}
       </div>
     );

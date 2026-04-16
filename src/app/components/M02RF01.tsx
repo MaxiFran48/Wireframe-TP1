@@ -1,46 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Calendar as CalendarIcon,
   Clock,
-  Settings,
   Save,
   X,
   Plus,
   Trash2,
   AlertCircle,
-  Users,
   CalendarClock,
-  CalendarX,
-  FileText,
-  Video,
-  Building2,
-  CheckCircle,
-  Edit,
-  Layers,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Switch } from "./ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Calendar } from "./ui/calendar";
 import { Badge } from "./ui/badge";
+import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
-import { Textarea } from "./ui/textarea";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 
 interface TimeSlot {
   id: string;
@@ -57,61 +39,16 @@ interface WeekSchedule {
   [key: string]: DaySchedule;
 }
 
-interface BlockedDate {
-  id: string;
-  date: Date;
-  reason: string;
+interface Props {
+  onDiscard?: () => void;
+  onSave?: () => void;
+  onNavigateHome?: () => void;
 }
 
-interface AppointmentType {
-  id: string;
-  name: string;
-  duration: string;
-  description: string;
-  confirmationType: "manual" | "automatic";
-  modality: "presencial" | "virtual" | "both";
-}
-
-export default function M02RF01() {
+export default function M02RF01({ onDiscard, onSave, onNavigateHome }: Props) {
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState("schedule");
-
-  // Appointment Types state
-  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([
-    {
-      id: "1",
-      name: "Consulta de control",
-      duration: "30",
-      description: "Revisión periódica del estado de salud del paciente",
-      confirmationType: "automatic",
-      modality: "presencial",
-    },
-    {
-      id: "2",
-      name: "Primera consulta",
-      duration: "60",
-      description: "Evaluación inicial completa del paciente nuevo",
-      confirmationType: "manual",
-      modality: "both",
-    },
-    {
-      id: "3",
-      name: "Teleconsulta",
-      duration: "20",
-      description: "",
-      confirmationType: "automatic",
-      modality: "virtual",
-    },
-  ]);
-  const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
-  const [editingType, setEditingType] = useState<AppointmentType | null>(null);
-  const [typeFormData, setTypeFormData] = useState<Omit<AppointmentType, "id">>({
-    name: "",
-    duration: "30",
-    description: "",
-    confirmationType: "automatic",
-    modality: "presencial",
-  });
+  const [showNavigateDialog, setShowNavigateDialog] = useState(false);
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
   // Schedule state
   const [weekSchedule, setWeekSchedule] = useState<WeekSchedule>({
@@ -124,19 +61,6 @@ export default function M02RF01() {
     domingo: { enabled: false, slots: [{ id: "7", start: "09:00", end: "13:00" }] },
   });
 
-  // Blocked dates state
-  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([
-    { id: "1", date: new Date(2026, 3, 18), reason: "Feriado - Viernes Santo" },
-    { id: "2", date: new Date(2026, 4, 1), reason: "Día del Trabajador" },
-  ]);
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-  const [blockReason, setBlockReason] = useState("");
-
-  // Advanced settings state
-  const [slotDuration, setSlotDuration] = useState("30");
-  const [minAdvanceBooking, setMinAdvanceBooking] = useState("2");
-  const [maxDailyBookings, setMaxDailyBookings] = useState("20");
-
   const daysOfWeek = [
     "lunes",
     "martes",
@@ -146,6 +70,18 @@ export default function M02RF01() {
     "sábado",
     "domingo",
   ];
+
+  // Intercept beforeunload if unsaved changes exist
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
 
   const toggleDay = (day: string) => {
     setWeekSchedule({
@@ -196,609 +132,230 @@ export default function M02RF01() {
     setHasChanges(true);
   };
 
-  const addBlockedDates = () => {
-    if (selectedDates.length === 0 || !blockReason) return;
-
-    const newBlocked = selectedDates.map((date) => ({
-      id: Date.now().toString() + Math.random(),
-      date,
-      reason: blockReason,
-    }));
-
-    setBlockedDates([...blockedDates, ...newBlocked]);
-    setSelectedDates([]);
-    setBlockReason("");
-    setHasChanges(true);
-  };
-
-  const removeBlockedDate = (id: string) => {
-    setBlockedDates(blockedDates.filter((d) => d.id !== id));
-    setHasChanges(true);
-  };
-
   const handleSave = () => {
-    // Save logic here
-    console.log("Saving schedule...", {
-      weekSchedule,
-      blockedDates,
-      slotDuration,
-      minAdvanceBooking,
-      maxDailyBookings,
+    setHasChanges(false);
+    toast.success("Los cambios han sido guardados correctamente.", {
+      position: "top-right"
     });
+    if (onSave) onSave();
+  };
+
+  const attemptDiscard = () => {
+    if (hasChanges) {
+      setShowDiscardDialog(true);
+    } else if (onDiscard) {
+      onDiscard();
+    }
+  };
+
+  const confirmDiscard = () => {
+    setShowDiscardDialog(false);
     setHasChanges(false);
-  };
-
-  const handleDiscard = () => {
-    // Reset to initial state
-    setHasChanges(false);
-  };
-
-  // Appointment Types functions
-  const openTypeDialog = (type?: AppointmentType) => {
-    if (type) {
-      setEditingType(type);
-      setTypeFormData({
-        name: type.name,
-        duration: type.duration,
-        description: type.description,
-        confirmationType: type.confirmationType,
-        modality: type.modality,
-      });
-    } else {
-      setEditingType(null);
-      setTypeFormData({
-        name: "",
-        duration: "30",
-        description: "",
-        confirmationType: "automatic",
-        modality: "presencial",
-      });
+    
+    // Check if we are discarding because we want to leave the page or just clear
+    if (showNavigateDialog) {
+      toast.info("Saliendo sin guardar cambios.", { position: "top-right" });
+      if (onNavigateHome) onNavigateHome();
+      return;
     }
-    setIsTypeDialogOpen(true);
+    
+    toast.info("Cambios descartados exitosamente.", { position: "top-right" });
+    if (onDiscard) onDiscard();
   };
 
-  const saveAppointmentType = () => {
-    if (!typeFormData.name.trim()) return;
-
-    if (editingType) {
-      // Edit existing type
-      setAppointmentTypes(
-        appointmentTypes.map((t) =>
-          t.id === editingType.id ? { ...typeFormData, id: t.id } : t
-        )
-      );
-    } else {
-      // Create new type
-      const newType: AppointmentType = {
-        ...typeFormData,
-        id: Date.now().toString(),
-      };
-      setAppointmentTypes([...appointmentTypes, newType]);
-    }
-
-    setIsTypeDialogOpen(false);
-    setHasChanges(true);
-  };
-
-  const deleteAppointmentType = (id: string) => {
-    setAppointmentTypes(appointmentTypes.filter((t) => t.id !== id));
-    setHasChanges(true);
-  };
-
-  const getModalityIcon = (modality: string) => {
-    switch (modality) {
-      case "presencial":
-        return Building2;
-      case "virtual":
-        return Video;
-      case "both":
-        return Layers;
-      default:
-        return Building2;
-    }
-  };
-
-  const getModalityLabel = (modality: string) => {
-    switch (modality) {
-      case "presencial":
-        return "Presencial";
-      case "virtual":
-        return "Virtual";
-      case "both":
-        return "Presencial y Virtual";
-      default:
-        return modality;
+  const attemptNavigate = () => {
+    if (hasChanges) {
+      setShowNavigateDialog(true);
+      setShowDiscardDialog(true);
+    } else if (onNavigateHome) {
+      onNavigateHome();
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200/60 px-8 py-6 shadow-sm">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="size-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-200/50">
-                  <CalendarClock className="size-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-semibold text-slate-900">
-                    M02-RF01: Agenda de Horarios
-                  </h1>
-                  <p className="text-sm text-slate-600 mt-0.5">
-                    Configure sus horas laborales por día y los tipos de turnos disponibles.
-                  </p>
-                </div>
-              </div>
+    <div className="flex flex-col flex-1">
+      {/* Navigation Bar */}
+      <div className="p-4 border-b bg-white shadow-sm z-10">
+        <button 
+          onClick={attemptNavigate}
+          className="text-sm font-medium text-slate-600 hover:text-indigo-600 flex items-center gap-2 transition-colors"
+        >
+          ← Volver al inicio (Perfil de Administrador)
+        </button>
+      </div>
+
+      <div className="min-h-screen bg-slate-50 flex flex-col p-8 items-center">
+        <AlertDialog open={showDiscardDialog} onOpenChange={(open) => {
+          setShowDiscardDialog(open);
+          if (!open) setShowNavigateDialog(false);
+        }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Está seguro que desea descartar los cambios?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tiene modificaciones sin guardar. Si {showNavigateDialog ? 'sale' : 'descarta los cambios'}, perderá todo lo que haya ajustado recientemente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowNavigateDialog(false)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDiscard} className="bg-red-600 hover:bg-red-700 text-white">
+                Sí, {showNavigateDialog ? 'salir sin guardar' : 'descartar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+      <div className="w-full max-w-4xl bg-white p-6 shadow-sm border border-slate-200 rounded-xl">
+        <div className="flex items-center justify-between mb-8 border-b pb-6">
+          <div className="flex gap-4 items-center">
+            <div className="size-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shrink-0">
+              <CalendarClock className="size-6 text-white" />
             </div>
-            <div className="flex items-center gap-3">
-              {hasChanges && (
-                <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
-                  <AlertCircle className="size-3" />
-                  Cambios sin guardar
-                </Badge>
-              )}
-              <Button
-                variant="outline"
-                onClick={handleDiscard}
-                disabled={!hasChanges}
-                className="gap-2"
-              >
-                <X className="size-4" />
-                Descartar
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges}
-                className="gap-2 shadow-md shadow-indigo-200/50"
-              >
-                <Save className="size-4" />
-                Guardar Cambios
-              </Button>
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">
+                M02-RF01: Agenda de Horarios
+              </h1>
+              <p className="text-sm text-slate-600 mt-0.5">
+                Configure sus horas laborales por día para estar disponible a reservas.
+              </p>
             </div>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-white shadow-sm border border-slate-200/60 mb-6 p-1 h-auto relative z-0 flex w-max rounded-lg">
-            <TabsTrigger value="schedule" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
-              <Clock className="size-4" />
-              Horarios Semanales
-            </TabsTrigger>
-            <TabsTrigger value="types" className="gap-2 py-2 px-4 rounded-md data-[state=active]:bg-slate-800 data-[state=active]:text-white data-[state=inactive]:text-slate-600 data-[state=inactive]:hover:bg-slate-100 transition-colors">
-              <FileText className="size-4" />
-              Tipos de Turno
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Appointment Types Tab */}
-          <TabsContent value="types" className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-slate-600 text-sm">
-                  Defina los diferentes tipos de turnos que ofrece a sus pacientes
-                </p>
-              </div>
-              <Button
-                onClick={() => openTypeDialog()}
-                className="gap-2 shadow-md shadow-indigo-200/50"
-              >
-                <Plus className="size-4" />
-                Crear Tipo de Turno
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {appointmentTypes.map((type) => {
-                const ModalityIcon = getModalityIcon(type.modality);
-                return (
-                  <div
-                    key={type.id}
-                    className="bg-white rounded-xl shadow-md shadow-slate-200/50 border border-slate-200/60 overflow-hidden hover:shadow-lg transition-all group"
-                  >
-                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 px-5 py-4 border-b border-slate-200/60">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-slate-900 mb-1">
-                            {type.name}
-                          </h3>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline" className="text-xs bg-white/60">
-                              <Clock className="size-3" />
-                              {type.duration} min
-                            </Badge>
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${
-                                type.confirmationType === "automatic"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : "bg-amber-50 text-amber-700 border-amber-200"
-                              }`}
-                            >
-                              {type.confirmationType === "automatic"
-                                ? "Confirmación automática"
-                                : "Requiere confirmación"}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="size-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                          <ModalityIcon className="size-5 text-indigo-600" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-5">
-                      <div className="mb-4">
-                        <p className="text-xs text-slate-500 mb-1">Modalidad</p>
-                        <p className="text-sm font-medium text-slate-900">
-                          {getModalityLabel(type.modality)}
-                        </p>
-                      </div>
-
-                      {type.description && (
-                        <div className="mb-4">
-                          <p className="text-xs text-slate-500 mb-1">Descripción</p>
-                          <p className="text-sm text-slate-700 leading-relaxed">
-                            {type.description}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openTypeDialog(type)}
-                          className="flex-1 gap-2"
-                        >
-                          <Edit className="size-3.5" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteAppointmentType(type.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {appointmentTypes.length === 0 && (
-                <div className="col-span-full bg-white rounded-xl border-2 border-dashed border-slate-200 p-12 text-center">
-                  <FileText className="size-12 text-slate-300 mx-auto mb-3" />
-                  <h3 className="font-medium text-slate-900 mb-1">
-                    No hay tipos de turno definidos
-                  </h3>
-                  <p className="text-sm text-slate-500 mb-4">
-                    Comience creando su primer tipo de turno para que sus pacientes
-                    puedan reservar
-                  </p>
-                  <Button onClick={() => openTypeDialog()} className="gap-2">
-                    <Plus className="size-4" />
-                    Crear Primer Tipo de Turno
-                  </Button>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Weekly Schedule Tab */}
-          <TabsContent value="schedule" className="space-y-4">
-            <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200/60 overflow-hidden">
-              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-slate-200/60">
-                <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                  <CalendarIcon className="size-5 text-indigo-600" />
-                  Configure su horario laboral semanal
-                </h2>
-                <p className="text-sm text-slate-600 mt-1">
-                  Active los días laborables y defina los horarios de atención. Puede agregar turnos cortados para cada día.
-                </p>
-              </div>
-
-              <div className="divide-y divide-slate-100">
-                {daysOfWeek.map((day, index) => {
-                  const schedule = weekSchedule[day];
-                  return (
-                    <div
-                      key={day}
-                      className={`px-6 py-5 transition-all ${
-                        !schedule.enabled ? "bg-slate-50/50" : "hover:bg-slate-50/30"
-                      }`}
-                    >
-                      <div className="flex items-start gap-6">
-                        {/* Day Toggle */}
-                        <div className="flex items-center gap-4 min-w-[180px]">
-                          <Switch
-                            checked={schedule.enabled}
-                            onCheckedChange={() => toggleDay(day)}
-                          />
-                          <div>
-                            <p className="font-medium text-slate-900 capitalize">
-                              {day}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {schedule.enabled ? "Día laborable" : "Día inactivo"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Time Slots */}
-                        <div className="flex-1 space-y-3">
-                          {schedule.enabled && (
-                            <>
-                              {schedule.slots.map((slot, slotIndex) => (
-                                <div
-                                  key={slot.id}
-                                  className="flex items-center gap-3"
-                                >
-                                  {schedule.slots.length > 1 && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs text-slate-600"
-                                    >
-                                      Turno {slotIndex + 1}
-                                    </Badge>
-                                  )}
-                                  <div className="flex items-center gap-2">
-                                    <Input
-                                      type="time"
-                                      value={slot.start}
-                                      onChange={(e) =>
-                                        updateSlotTime(day, slot.id, "start", e.target.value)
-                                      }
-                                      className="w-[130px]"
-                                    />
-                                    <span className="text-slate-400">—</span>
-                                    <Input
-                                      type="time"
-                                      value={slot.end}
-                                      onChange={(e) =>
-                                        updateSlotTime(day, slot.id, "end", e.target.value)
-                                      }
-                                      className="w-[130px]"
-                                    />
-                                  </div>
-                                  {schedule.slots.length > 1 && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeSlot(day, slot.id)}
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="size-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                              ))}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addSplitShift(day)}
-                                className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                              >
-                                <Plus className="size-4" />
-                                Agregar turno cortado
-                              </Button>
-                            </>
-                          )}
-                          {!schedule.enabled && (
-                            <p className="text-sm text-slate-400 italic">
-                              Día deshabilitado para reservas
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
-
-      {/* Appointment Type Dialog */}
-      <Dialog open={isTypeDialogOpen} onOpenChange={setIsTypeDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingType ? "Editar Tipo de Turno" : "Crear Nuevo Tipo de Turno"}
-            </DialogTitle>
-            <DialogDescription>
-              Configure los detalles del tipo de turno que sus pacientes podrán reservar
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-5 py-4 max-h-[70vh] overflow-y-auto pr-6">
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Nombre del tipo de turno <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="Ej: Consulta de control, Primera consulta..."
-                value={typeFormData.name}
-                onChange={(e) =>
-                  setTypeFormData({ ...typeFormData, name: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Duration */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Duración <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={typeFormData.duration}
-                onValueChange={(val) =>
-                  setTypeFormData({ ...typeFormData, duration: val })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15">15 minutos</SelectItem>
-                  <SelectItem value="20">20 minutos</SelectItem>
-                  <SelectItem value="30">30 minutos</SelectItem>
-                  <SelectItem value="45">45 minutos</SelectItem>
-                  <SelectItem value="60">60 minutos (1 hora)</SelectItem>
-                  <SelectItem value="90">90 minutos (1.5 horas)</SelectItem>
-                  <SelectItem value="120">120 minutos (2 horas)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Descripción (opcional)
-              </label>
-              <Textarea
-                placeholder="Describa brevemente en qué consiste este tipo de turno..."
-                value={typeFormData.description}
-                onChange={(e) =>
-                  setTypeFormData({ ...typeFormData, description: e.target.value })
-                }
-                className="min-h-20"
-              />
-            </div>
-
-            {/* Confirmation Type */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-3">
-                Tipo de confirmación <span className="text-red-500">*</span>
-              </label>
-              <RadioGroup
-                value={typeFormData.confirmationType}
-                onValueChange={(val: "manual" | "automatic") =>
-                  setTypeFormData({ ...typeFormData, confirmationType: val })
-                }
-              >
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="automatic" id="automatic" />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="automatic"
-                      className="font-medium text-slate-900 cursor-pointer flex items-center gap-2"
-                    >
-                      <CheckCircle className="size-4 text-emerald-600" />
-                      Confirmación automática
-                    </label>
-                    <p className="text-sm text-slate-600 mt-1">
-                      El turno se confirma instantáneamente cuando el paciente reserva
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="manual" id="manual" />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="manual"
-                      className="font-medium text-slate-900 cursor-pointer flex items-center gap-2"
-                    >
-                      <AlertCircle className="size-4 text-amber-600" />
-                      Requiere confirmación manual
-                    </label>
-                    <p className="text-sm text-slate-600 mt-1">
-                      Usted debe revisar y confirmar manualmente cada reserva
-                    </p>
-                  </div>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Modality */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-3">
-                Modalidad <span className="text-red-500">*</span>
-              </label>
-              <RadioGroup
-                value={typeFormData.modality}
-                onValueChange={(val: "presencial" | "virtual" | "both") =>
-                  setTypeFormData({ ...typeFormData, modality: val })
-                }
-              >
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="presencial" id="presencial" />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="presencial"
-                      className="font-medium text-slate-900 cursor-pointer flex items-center gap-2"
-                    >
-                      <Building2 className="size-4 text-blue-600" />
-                      Presencial
-                    </label>
-                    <p className="text-sm text-slate-600 mt-1">
-                      La consulta se realiza en el consultorio físico
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="virtual" id="virtual" />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="virtual"
-                      className="font-medium text-slate-900 cursor-pointer flex items-center gap-2"
-                    >
-                      <Video className="size-4 text-purple-600" />
-                      Virtual
-                    </label>
-                    <p className="text-sm text-slate-600 mt-1">
-                      La consulta se realiza por videollamada
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-                  <RadioGroupItem value="both" id="both" />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="both"
-                      className="font-medium text-slate-900 cursor-pointer flex items-center gap-2"
-                    >
-                      <Layers className="size-4 text-indigo-600" />
-                      Presencial y Virtual
-                    </label>
-                    <p className="text-sm text-slate-600 mt-1">
-                      El paciente puede elegir entre consulta presencial o virtual
-                    </p>
-                  </div>
-                </div>
-              </RadioGroup>
-            </div>
-          </div>
-
-          <DialogFooter>
+          <div className="flex items-center gap-3">
+            {hasChanges && (
+              <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
+                <AlertCircle className="size-3 mr-1" />
+                Cambios sin guardar
+              </Badge>
+            )}
             <Button
               variant="outline"
-              onClick={() => setIsTypeDialogOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={saveAppointmentType}
-              disabled={!typeFormData.name.trim()}
+              onClick={attemptDiscard}
+              disabled={!hasChanges}
               className="gap-2"
             >
-              <Save className="size-4" />
-              {editingType ? "Guardar Cambios" : "Crear Tipo de Turno"}
+              <X className="size-4" />
+              Descartar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button
+              onClick={handleSave}
+              disabled={!hasChanges}
+              className="gap-2 shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              <Save className="size-4" />
+              Guardar Cambios
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-slate-50 rounded-2xl shadow-inner border border-slate-200/60 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-slate-200/60">
+            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+              <Clock className="size-5 text-indigo-600" />
+              Configure su horario laboral semanal
+            </h2>
+            <p className="text-sm text-slate-600 mt-1">
+              Active los días laborables y defina los horarios de atención. Puede agregar turnos cortados para cada día.
+            </p>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {daysOfWeek.map((day) => {
+              const schedule = weekSchedule[day];
+              return (
+                <div
+                  key={day}
+                  className={`px-6 py-5 transition-all ${
+                    !schedule.enabled ? "bg-white" : "bg-slate-50/10 hover:bg-slate-50/40"
+                  }`}
+                >
+                  <div className="flex items-start gap-6">
+                    <div className="flex items-center gap-4 min-w-[180px]">
+                      <Switch
+                        checked={schedule.enabled}
+                        onCheckedChange={() => toggleDay(day)}
+                      />
+                      <div>
+                        <p className="font-medium text-slate-900 capitalize">
+                          {day}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {schedule.enabled ? "Día laborable" : "Día inactivo"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 space-y-3">
+                      {schedule.enabled && (
+                        <>
+                          {schedule.slots.map((slot, slotIndex) => (
+                            <div
+                              key={slot.id}
+                              className="flex items-center gap-3"
+                            >
+                              {schedule.slots.length > 1 && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs text-slate-600"
+                                >
+                                  Turno {slotIndex + 1}
+                                </Badge>
+                              )}
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="time"
+                                  value={slot.start}
+                                  onChange={(e) =>
+                                    updateSlotTime(day, slot.id, "start", e.target.value)
+                                  }
+                                  className="w-[130px]"
+                                />
+                                <span className="text-slate-400">—</span>
+                                <Input
+                                  type="time"
+                                  value={slot.end}
+                                  onChange={(e) =>
+                                    updateSlotTime(day, slot.id, "end", e.target.value)
+                                  }
+                                  className="w-[130px]"
+                                />
+                              </div>
+                              {schedule.slots.length > 1 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeSlot(day, slot.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addSplitShift(day)}
+                            className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50 mt-1"
+                          >
+                            <Plus className="size-4" />
+                            Agregar turno cortado
+                          </Button>
+                        </>
+                      )}
+                      {!schedule.enabled && (
+                        <p className="text-sm text-slate-400 italic">
+                          Día deshabilitado para reservas
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
     </div>
   );
 }
